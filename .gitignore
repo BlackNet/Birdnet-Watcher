@@ -1,0 +1,7 @@
+.env
+state/
+# JOE editor backup files
+*~
+
+# JOE crash recovery file
+DEADJOE

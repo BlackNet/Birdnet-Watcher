@@ -1,0 +1,30 @@
+[Unit]
+Description=BirdNET-Watcher Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Script location
+WorkingDirectory=/root/birdnet-watcher
+ExecStart=/bin/bash /root/birdnet-watcher/birdnet-watcher.sh
+
+# Ensure child processes are terminated correctly
+KillMode=mixed
+ExecStop=/bin/kill -TERM $MAINPID
+
+# Restart behavior
+Restart=always
+RestartSec=5
+
+# Environment
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
