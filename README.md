@@ -70,10 +70,12 @@ chmod +x watcher.sh
 ## systemd Service (Optional)
 A sample service file is included in the repository.
 Install it to:
+
 ```bash
 /etc/systemd/system/birdnet-watcher.service
 ```
 Then enable and start:
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable birdnet-watcher
@@ -83,6 +85,7 @@ sudo systemctl start birdnet-watcher
 ---
 
 ## Logging & Debugging
+
 ```bash
 DEBUG=true
 ```
