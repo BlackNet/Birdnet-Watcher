@@ -84,6 +84,6 @@ to print detailed processing information, including:
 * species matches
 * confidence checks
 * cooldown decisions
-* Discord send failures
+Discord send failures
 
 Successful Discord sends remain silent (HTTP 204).
