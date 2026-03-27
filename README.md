@@ -51,6 +51,7 @@ Create a `.env` file in the same directory as `watcher.sh`:
 ```bash
 WEBHOOK_URL="https://discord.com/api/webhooks/xxxx/xxxx"
 ```
+
 * Quotes are required
 * .env must not be committed
 * .gitignore should include .env
@@ -90,10 +91,10 @@ sudo systemctl start birdnet-watcher
 DEBUG=true
 ```
 to print detailed processing information, including:
-* species matches.
-* confidence checks.
-* cooldown decisions.
-* Discord send failures.
+* species matches
+* confidence checks
+* cooldown decisions
+* Discord send failures
 
 Successful Discord sends remain silent (HTTP 204).
 
