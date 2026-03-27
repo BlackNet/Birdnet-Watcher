@@ -50,4 +50,40 @@ Create a `.env` file in the same directory as `watcher.sh`:
 
 ```bash
 WEBHOOK_URL="https://discord.com/api/webhooks/xxxx/xxxx"
+```
+---
 
+## Running the Watcher
+```bash
+chmod +x watcher.sh
+./watcher.sh
+```
+
+---
+
+## systemd Service (Optional)
+A sample service file is included in the repository.
+Install it to:
+```bash
+/etc/systemd/system/birdnet-watcher.service
+```
+Then enable and start:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable birdnet-watcher
+sudo systemctl start birdnet-watcher
+```
+
+---
+
+## Logging & Debugging
+```bash
+DEBUG=true
+```
+to print detailed processing information, including:
+* species matches
+* confidence checks
+* cooldown decisions
+* Discord send failures
+
+Successful Discord sends remain silent (HTTP 204).
