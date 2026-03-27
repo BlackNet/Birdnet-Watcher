@@ -165,7 +165,6 @@ duck_names=(
   "mallard"
   "wood duck"
   "green-winged teal"
-  "common yellowthroat"
   "hooded merganser"
   "canada goose"
 )
