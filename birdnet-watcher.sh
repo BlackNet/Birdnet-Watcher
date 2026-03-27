@@ -87,7 +87,7 @@ fi
 ############################################################
 
 LOG=/root/birdnet-go-app/data/logs/actions.log
-LOCATION="East Alabama"
+LOCATION="MoonLake"
 
 COOLDOWN=60
 DEBUG=true
@@ -120,7 +120,6 @@ raptor_names=(
   "cooper's hawk"
   "sharp-shinned hawk"
   "red-shouldered hawk"
-  "northern cardinal"
   "bald eagle"
   "osprey"
 )
@@ -165,6 +164,7 @@ declare -A duck=(
 duck_names=(
   "mallard"
   "wood duck"
+  "green-winged teal"
   "common yellowthroat"
   "hooded merganser"
   "canada goose"
