@@ -275,7 +275,7 @@ while read -r line; do
     --arg CONFIDENCE "$CONFIDENCE_PCT" \
     --argjson color "$embed_color" \
     '{
-      content: ($species + " at " + $LOCATION),
+      content: ($species + " " + $CONFIDENCE + " at " + $LOCATION),
       embeds: [
         {
           title: $species,
