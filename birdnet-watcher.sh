@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# BirdNET-Go Watcher — Version 7.4
+# BirdNET-Go Watcher — Version 8
 #
 # ===================== CHANGELOG ============================
 #
@@ -66,6 +66,18 @@
 #   - Removed hardcoded webhook secret
 #   - No logic changes from Version 7.3
 #
+# Version 8:
+#   - Updated for the multi-model BirdNET-Go (BirdNET, Perch, bat models)
+#   - Only approved detections are processed; pending and
+#     discarded detections in the log are ignored
+#   - Added BAT group (purple), all bats in the USA East bat model
+#   - Added FROG group (olive), region-appropriate frogs and toads
+#   - Added MAMMAL group (brown)
+#   - Added INSECT group (orange)
+#   - Added optional per-group cooldown; groups without one use COOLDOWN
+#   - Added alternate names where BirdNET-Go's name depends on the
+#     English locale setting (some bats, treefrogs, insects, teal)
+#
 # ============================================================
 
 # ============================================================
@@ -94,6 +106,13 @@ DEBUG=true
 
 ############################################################
 # GROUP DEFINITIONS (ALL LOWERCASE)
+#
+# [cooldown] is optional, in seconds. Groups without it use
+# COOLDOWN. Frogs and insects call for hours at a time, so
+# those groups get long cooldowns to keep Discord quiet.
+#
+# Names must match what BirdNET-Go logs. Some names depend on
+# the English locale setting, so both forms are listed.
 ############################################################
 
 declare -A woodpecker=(
@@ -116,10 +135,6 @@ declare -A raptor=(
   [confidence]=0.20
 )
 raptor_names=(
-  "red-tailed hawk"
-  "cooper's hawk"
-  "sharp-shinned hawk"
-  "red-shouldered hawk"
   "bald eagle"
   "osprey"
 )
@@ -142,10 +157,7 @@ declare -A songbird=(
   [confidence]=0.95
 )
 songbird_names=(
-  "eastern phoebe"
-  "blue jay"
   "eastern bluebird"
-  "carolina chickadee"
   "american goldfinch"
 )
 
@@ -165,8 +177,112 @@ duck_names=(
   "mallard"
   "wood duck"
   "green-winged teal"
+  "eurasian/green-winged teal"
   "hooded merganser"
-  "canada goose"
+)
+
+declare -A bat=(
+  [color]=8388736
+  [confidence]=0.20
+  [cooldown]=300
+)
+bat_names=(
+  "big brown bat"
+  "silver-haired bat"
+  "eastern red bat"
+  "northern hoary bat"
+  "hoary bat"
+  "northern yellow bat"
+  "seminole bat"
+  "southeastern myotis"
+  "gray bat"
+  "myotis grisescens"
+  "eastern small-footed myotis"
+  "myotis leibii"
+  "little brown bat"
+  "myotis lucifugus"
+  "northern myotis"
+  "myotis septentrionalis"
+  "indiana bat"
+  "myotis sodalis"
+  "evening bat"
+  "nycticeius humeralis"
+  "tricolored bat"
+  "perimyotis subflavus"
+  "mexican free-tailed bat"
+  "tadarida brasiliensis"
+  "townsend's big-eared bat"
+)
+
+declare -A frog=(
+  [color]=7048739
+  [confidence]=0.50
+  [cooldown]=1800
+)
+frog_names=(
+  "american toad"
+  "fowler's toad"
+  "southern toad"
+  "oak toad"
+  "eastern narrow-mouthed toad"
+  "eastern spadefoot"
+  "northern cricket frog"
+  "southern cricket frog"
+  "spring peeper"
+  "upland chorus frog"
+  "southern chorus frog"
+  "ornate chorus frog"
+  "bird-voiced treefrog"
+  "green treefrog"
+  "gray treefrog"
+  "cope's gray tree frog"
+  "cope's gray treefrog"
+  "pine woods tree frog"
+  "pine woods treefrog"
+  "barking tree frog"
+  "barking treefrog"
+  "squirrel tree frog"
+  "squirrel treefrog"
+  "american bullfrog"
+  "green frog"
+  "pickerel frog"
+  "southern leopard frog"
+)
+
+declare -A mammal=(
+  [color]=9127187
+  [confidence]=0.50
+  [cooldown]=1800
+)
+mammal_names=(
+  "coyote"
+  "white-tailed deer"
+  "eastern gray squirrel"
+  "eastern chipmunk"
+)
+
+declare -A insect=(
+  [color]=16747520
+  [confidence]=0.80
+  [cooldown]=3600
+)
+insect_names=(
+  "common true katydid"
+  "greater anglewing"
+  "greater angle-wing"
+  "oblong-winged katydid"
+  "fork-tailed bush katydid"
+  "sword-bearing conehead"
+  "round-tipped conehead"
+  "handsome meadow katydid"
+  "southeastern field cricket"
+  "southern wood cricket"
+  "carolina ground cricket"
+  "narrow-winged tree cricket"
+  "red-headed bush cricket"
+  "handsome trig"
+  "say's trig"
+  "columbian trig"
 )
 
 ############################################################
@@ -176,6 +292,7 @@ duck_names=(
 declare -A species_group_map
 declare -A group_confidence
 declare -A group_color
+declare -A group_cooldown
 
 load_group() {
   local group="$1"
@@ -187,6 +304,7 @@ load_group() {
 
   group_color["$group"]=$(eval "echo \${${group}[color]}")
   group_confidence["$group"]=$(eval "echo \${${group}[confidence]}")
+  group_cooldown["$group"]=$(eval "echo \${${group}[cooldown]}")
 }
 
 load_group woodpecker
@@ -195,6 +313,10 @@ load_group owl
 load_group songbird
 load_group hummingbird
 load_group duck
+load_group bat
+load_group frog
+load_group mammal
+load_group insect
 
 declare -A last_seen
 
@@ -204,6 +326,12 @@ declare -A last_seen
 
 tail -F "$LOG" | \
 while read -r line; do
+
+  # Only approved detections. The log also carries pending,
+  # flushed and discarded detections for the same species.
+  if [[ "$line" != *'"operation":"approve_detection"'* ]]; then
+    continue
+  fi
 
   species=$(echo "$line" | jq -r '.species')
   confidence=$(echo "$line" | jq -r '.confidence')
@@ -244,11 +372,13 @@ while read -r line; do
     echo "[DEBUG] Species '$species' matched group '$group'"
   fi
 
+  cooldown="${group_cooldown[$group]:-$COOLDOWN}"
+
   if [[ -n "${last_seen[$species]}" ]]; then
     elapsed=$((now - last_seen[$species]))
-    if (( elapsed < COOLDOWN )); then
+    if (( elapsed < cooldown )); then
       if $DEBUG; then
-        echo "[DEBUG] Cooldown active for '$species' ($elapsed < $COOLDOWN) — skipping"
+        echo "[DEBUG] Cooldown active for '$species' ($elapsed < $cooldown) — skipping"
       fi
       continue
     fi
